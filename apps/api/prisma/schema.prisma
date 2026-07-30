@@ -1,0 +1,346 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  OPERATOR
+}
+
+enum Unit {
+  KG
+  TON
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         UserRole  @default(OPERATOR)
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  purchases      Purchase[]      @relation("PurchaseCreatedBy")
+  sales          Sale[]          @relation("SaleCreatedBy")
+  payments       Payment[]       @relation("PaymentCreatedBy")
+  expenses       Expense[]       @relation("ExpenseCreatedBy")
+  stockMovements StockMovement[] @relation("StockMovementCreatedBy")
+
+  @@index([email])
+  @@map("users")
+}
+
+model Party {
+  id             String    @id @default(uuid())
+  partyCode      String    @unique @map("party_code")
+  name           String
+  phone          String?
+  address        String?
+  openingBalance Decimal   @default(0) @map("opening_balance") @db.Decimal(15, 2)
+  isSupplier     Boolean   @default(false) @map("is_supplier")
+  isCustomer     Boolean   @default(false) @map("is_customer")
+  isActive       Boolean   @default(true) @map("is_active")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  purchases     Purchase[]
+  sales         Sale[]
+  payments      Payment[]
+  ledgerEntries LedgerEntry[]
+
+  @@index([partyCode])
+  @@index([name])
+  @@map("parties")
+}
+
+model ScrapItem {
+  id        String    @id @default(uuid())
+  itemCode  String    @unique @map("item_code")
+  name      String
+  category  String?
+  unit      Unit      @default(KG)
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  purchaseItems  PurchaseItem[]
+  saleItems      SaleItem[]
+  stockMovements StockMovement[]
+
+  @@index([itemCode])
+  @@map("scrap_items")
+}
+
+model Warehouse {
+  id        String    @id @default(uuid())
+  name      String
+  address   String?
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  purchases      Purchase[]
+  sales          Sale[]
+  stockMovements StockMovement[]
+
+  @@map("warehouses")
+}
+
+model Vehicle {
+  id        String    @id @default(uuid())
+  vehicleNo String    @map("vehicle_no")
+  ownerName String?   @map("owner_name")
+  notes     String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  purchases Purchase[]
+
+  @@index([vehicleNo])
+  @@map("vehicles")
+}
+
+model ExpenseType {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  expenses Expense[]
+
+  @@map("expense_types")
+}
+
+model Settings {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+// ─── Part 3: Transaction & Ledger Enums ──────────────────────────────────────
+
+enum PurchaseStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
+enum SaleStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
+enum PaymentType {
+  SUPPLIER_PAYMENT
+  CUSTOMER_PAYMENT
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+  OTHER
+}
+
+enum MovementType {
+  PURCHASE_IN
+  SALE_OUT
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+}
+
+enum LedgerTransactionType {
+  PURCHASE
+  SALE
+  PAYMENT
+  EXPENSE_ADJUSTMENT
+}
+
+// ─── Part 3: Transaction & Ledger Models ─────────────────────────────────────
+
+model Purchase {
+  id             String         @id @default(uuid())
+  purchaseNumber String         @unique @map("purchase_number")
+  partyId        String         @map("party_id")
+  vehicleId      String?        @map("vehicle_id")
+  warehouseId    String         @map("warehouse_id")
+  purchaseDate   DateTime       @map("purchase_date")
+  status         PurchaseStatus @default(DRAFT)
+  grossAmount    Decimal        @map("gross_amount") @db.Decimal(15, 2)
+  expenseAmount  Decimal        @default(0) @map("expense_amount") @db.Decimal(15, 2)
+  netAmount      Decimal        @map("net_amount") @db.Decimal(15, 2)
+  createdBy      String         @map("created_by")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  deletedAt      DateTime?      @map("deleted_at")
+
+  party     Party         @relation(fields: [partyId], references: [id])
+  vehicle   Vehicle?      @relation(fields: [vehicleId], references: [id])
+  warehouse Warehouse     @relation(fields: [warehouseId], references: [id])
+  creator   User          @relation("PurchaseCreatedBy", fields: [createdBy], references: [id])
+  items     PurchaseItem[]
+
+  @@index([purchaseNumber])
+  @@index([partyId])
+  @@index([purchaseDate])
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id          String   @id @default(uuid())
+  purchaseId  String   @map("purchase_id")
+  itemId      String   @map("item_id")
+  grossWeight Decimal  @map("gross_weight") @db.Decimal(15, 3)
+  cutWeight   Decimal  @default(0) @map("cut_weight") @db.Decimal(15, 3)
+  netWeight   Decimal  @map("net_weight") @db.Decimal(15, 3)
+  rate        Decimal  @db.Decimal(15, 2)
+  amount      Decimal  @db.Decimal(15, 2)
+
+  purchase Purchase  @relation(fields: [purchaseId], references: [id])
+  item     ScrapItem @relation(fields: [itemId], references: [id])
+
+  @@index([purchaseId])
+  @@map("purchase_items")
+}
+
+model Sale {
+  id           String     @id @default(uuid())
+  saleNumber   String     @unique @map("sale_number")
+  partyId      String     @map("party_id")
+  warehouseId  String     @map("warehouse_id")
+  saleDate     DateTime   @map("sale_date")
+  status       SaleStatus @default(DRAFT)
+  grossAmount  Decimal    @map("gross_amount") @db.Decimal(15, 2)
+  expenseAmount Decimal   @default(0) @map("expense_amount") @db.Decimal(15, 2)
+  netAmount    Decimal    @map("net_amount") @db.Decimal(15, 2)
+  createdBy    String     @map("created_by")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  deletedAt    DateTime?  @map("deleted_at")
+
+  party     Party      @relation(fields: [partyId], references: [id])
+  warehouse Warehouse  @relation(fields: [warehouseId], references: [id])
+  creator   User       @relation("SaleCreatedBy", fields: [createdBy], references: [id])
+  items     SaleItem[]
+
+  @@index([saleNumber])
+  @@index([partyId])
+  @@index([saleDate])
+  @@map("sales")
+}
+
+model SaleItem {
+  id       String   @id @default(uuid())
+  saleId   String   @map("sale_id")
+  itemId   String   @map("item_id")
+  quantity Decimal  @db.Decimal(15, 3)
+  rate     Decimal  @db.Decimal(15, 2)
+  amount   Decimal  @db.Decimal(15, 2)
+
+  sale Sale      @relation(fields: [saleId], references: [id])
+  item ScrapItem @relation(fields: [itemId], references: [id])
+
+  @@index([saleId])
+  @@map("sale_items")
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  paymentNumber   String        @unique @map("payment_number")
+  partyId         String        @map("party_id")
+  paymentType     PaymentType   @map("payment_type")
+  amount          Decimal       @db.Decimal(15, 2)
+  method          PaymentMethod
+  referenceNumber String?       @map("reference_number")
+  paymentDate     DateTime      @map("payment_date")
+  remarks         String?
+  createdBy       String        @map("created_by")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  party   Party @relation(fields: [partyId], references: [id])
+  creator User  @relation("PaymentCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([paymentNumber])
+  @@index([partyId])
+  @@index([paymentDate])
+  @@map("payments")
+}
+
+model Expense {
+  id            String      @id @default(uuid())
+  expenseTypeId String      @map("expense_type_id")
+  amount        Decimal     @db.Decimal(15, 2)
+  remarks       String?
+  expenseDate   DateTime    @map("expense_date")
+  createdBy     String      @map("created_by")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  expenseType ExpenseType @relation(fields: [expenseTypeId], references: [id])
+  creator     User        @relation("ExpenseCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([expenseDate])
+  @@map("expenses")
+}
+
+model StockMovement {
+  id            String       @id @default(uuid())
+  warehouseId   String       @map("warehouse_id")
+  itemId        String       @map("item_id")
+  movementType  MovementType @map("movement_type")
+  referenceType String       @map("reference_type")
+  referenceId   String       @map("reference_id")
+  quantity      Decimal      @db.Decimal(15, 3)
+  balanceAfter  Decimal      @map("balance_after") @db.Decimal(15, 3)
+  createdBy     String       @map("created_by")
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  item      ScrapItem @relation(fields: [itemId], references: [id])
+  creator   User      @relation("StockMovementCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([itemId, warehouseId])
+  @@index([referenceId])
+  @@map("stock_movements")
+}
+
+model LedgerEntry {
+  id              String                @id @default(uuid())
+  partyId         String                @map("party_id")
+  transactionType LedgerTransactionType @map("transaction_type")
+  referenceType   String                @map("reference_type")
+  referenceId     String                @map("reference_id")
+  debit           Decimal               @default(0) @db.Decimal(15, 2)
+  credit          Decimal               @default(0) @db.Decimal(15, 2)
+  balanceAfter    Decimal               @map("balance_after") @db.Decimal(15, 2)
+  entryDate       DateTime              @map("entry_date")
+  createdAt       DateTime              @default(now()) @map("created_at")
+
+  party Party @relation(fields: [partyId], references: [id])
+
+  @@index([partyId, entryDate])
+  @@index([referenceId])
+  @@map("ledger_entries")
+}
