@@ -2,10 +2,12 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
+import cookie from '@fastify/cookie';
 import { env } from './config/env.js';
 import prismaPlugin from './plugins/prisma.js';
 import { registerErrorHandler } from './common/errorHandler.js';
 import { successResponse } from './common/response.js';
+import { authRoutes } from './modules/auth/auth.routes.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -17,14 +19,11 @@ export async function buildApp() {
               options: { colorize: true, translateTime: 'SYS:standard', ignore: 'pid,hostname' },
             },
           }
-        : true, // JSON in production
+        : true,
   });
 
   // ── Security headers ─────────────────────────────────────────────────────────
-  await app.register(helmet, {
-    // Content-Security-Policy is relaxed slightly for API-only usage
-    contentSecurityPolicy: false,
-  });
+  await app.register(helmet, { contentSecurityPolicy: false });
 
   // ── CORS ─────────────────────────────────────────────────────────────────────
   await app.register(cors, {
@@ -36,6 +35,9 @@ export async function buildApp() {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
+  // ── Cookies ──────────────────────────────────────────────────────────────────
+  await app.register(cookie);
+
   // ── Global rate limit ────────────────────────────────────────────────────────
   await app.register(rateLimit, {
     max: 100,
@@ -45,15 +47,16 @@ export async function buildApp() {
   // ── Database ─────────────────────────────────────────────────────────────────
   await app.register(prismaPlugin);
 
-  // ── Error handler (must register after plugins) ──────────────────────────────
+  // ── Error handler ────────────────────────────────────────────────────────────
   registerErrorHandler(app);
 
   // ── Routes ───────────────────────────────────────────────────────────────────
   app.get('/health', async (request, _reply) => {
-    // Quick DB connectivity check
     await request.server.prisma.warehouse.count();
     return successResponse({ status: 'ok', database: 'connected' });
   });
+
+  await app.register(authRoutes, { prefix: '/api/v1/auth' });
 
   return app;
 }
