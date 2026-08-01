@@ -8,6 +8,7 @@ import prismaPlugin from './plugins/prisma.js';
 import { registerErrorHandler } from './common/errorHandler.js';
 import { successResponse } from './common/response.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
+import { partiesRoutes } from './modules/parties/parties.routes.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -57,6 +58,7 @@ export async function buildApp() {
   });
 
   await app.register(authRoutes, { prefix: '/api/v1/auth' });
+  await app.register(partiesRoutes, { prefix: '/api/v1/parties' });
 
   return app;
 }

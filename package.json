@@ -6,7 +6,10 @@
     "dev": "concurrently \"pnpm --filter @scrap-erp/web dev\" \"pnpm --filter @scrap-erp/api dev\"",
     "build": "pnpm --filter @scrap-erp/web build && pnpm --filter @scrap-erp/api build",
     "lint": "pnpm -r lint",
-    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\" --ignore-path .gitignore"
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\" --ignore-path .gitignore",
+    "db:up": "docker compose -f docker/docker-compose.yml --env-file .env up -d",
+    "db:down": "docker compose -f docker/docker-compose.yml down",
+    "db:logs": "docker compose -f docker/docker-compose.yml logs -f postgres"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.18.0",

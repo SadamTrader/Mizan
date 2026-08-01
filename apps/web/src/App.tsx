@@ -6,6 +6,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { LoginPage } from '@/modules/auth/pages/LoginPage';
 import { DashboardPage } from '@/modules/dashboard/pages/DashboardPage';
+import { PartiesListPage } from '@/modules/parties/pages/PartiesListPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,6 +37,17 @@ function AppRoutes() {
           <ProtectedRoute>
             <DashboardLayout>
               <DashboardPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/parties"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <PartiesListPage />
             </DashboardLayout>
           </ProtectedRoute>
         }

@@ -42,6 +42,18 @@ export function DashboardLayout({ children }: Props) {
           >
             Dashboard
           </NavLink>
+          <NavLink
+            to="/parties"
+            className={({ isActive }) =>
+              `flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`
+            }
+          >
+            Parties
+          </NavLink>
           {/* More nav links added as modules are built */}
         </nav>
 
