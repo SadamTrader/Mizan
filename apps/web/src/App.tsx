@@ -7,6 +7,15 @@ import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { LoginPage } from '@/modules/auth/pages/LoginPage';
 import { DashboardPage } from '@/modules/dashboard/pages/DashboardPage';
 import { PartiesListPage } from '@/modules/parties/pages/PartiesListPage';
+import { ItemsListPage } from '@/modules/items/pages/ItemsListPage';
+import { WarehousesListPage } from '@/modules/warehouses/pages/WarehousesListPage';
+import { VehiclesListPage } from '@/modules/vehicles/pages/VehiclesListPage';
+import { PurchasesListPage } from '@/modules/purchases/pages/PurchasesListPage';
+import { PurchaseFormPage } from '@/modules/purchases/pages/PurchaseFormPage';
+import { PurchaseDetailPage } from '@/modules/purchases/pages/PurchaseDetailPage';
+import { SalesListPage } from '@/modules/sales/pages/SalesListPage';
+import { SaleFormPage } from '@/modules/sales/pages/SaleFormPage';
+import { SaleDetailPage } from '@/modules/sales/pages/SaleDetailPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,6 +61,16 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      <Route path="/items" element={<ProtectedRoute><DashboardLayout><ItemsListPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/warehouses" element={<ProtectedRoute><DashboardLayout><WarehousesListPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/vehicles" element={<ProtectedRoute><DashboardLayout><VehiclesListPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/purchases" element={<ProtectedRoute><DashboardLayout><PurchasesListPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/purchases/new" element={<ProtectedRoute><DashboardLayout><PurchaseFormPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/purchases/:id" element={<ProtectedRoute><DashboardLayout><PurchaseDetailPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/sales" element={<ProtectedRoute><DashboardLayout><SalesListPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/sales/new" element={<ProtectedRoute><DashboardLayout><SaleFormPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/sales/:id" element={<ProtectedRoute><DashboardLayout><SaleDetailPage /></DashboardLayout></ProtectedRoute>} />
 
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

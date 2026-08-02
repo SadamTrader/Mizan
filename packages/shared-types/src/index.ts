@@ -75,3 +75,194 @@ export type Party = {
   updatedAt: string;
   deletedAt: string | null;
 };
+
+// ─── ScrapItem schemas ────────────────────────────────────────────────────────
+
+export const createItemSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  category: z.string().optional(),
+  unit: z.enum(['KG', 'TON']),
+});
+
+export const updateItemSchema = z.object({
+  name: z.string().min(1).optional(),
+  category: z.string().optional(),
+  unit: z.enum(['KG', 'TON']).optional(),
+});
+
+export type CreateItemInput = z.infer<typeof createItemSchema>;
+export type UpdateItemInput = z.infer<typeof updateItemSchema>;
+
+export type ScrapItem = {
+  id: string;
+  itemCode: string;
+  name: string;
+  category: string | null;
+  unit: 'KG' | 'TON';
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+// ─── Warehouse schemas ────────────────────────────────────────────────────────
+
+export const createWarehouseSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  address: z.string().optional(),
+});
+
+export const updateWarehouseSchema = z.object({
+  name: z.string().min(1).optional(),
+  address: z.string().optional(),
+});
+
+export type CreateWarehouseInput = z.infer<typeof createWarehouseSchema>;
+export type UpdateWarehouseInput = z.infer<typeof updateWarehouseSchema>;
+
+export type Warehouse = {
+  id: string;
+  name: string;
+  address: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+// ─── Vehicle schemas ──────────────────────────────────────────────────────────
+
+export const createVehicleSchema = z.object({
+  vehicleNo: z.string().min(1, 'Vehicle number is required'),
+  ownerName: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export const updateVehicleSchema = z.object({
+  vehicleNo: z.string().min(1).optional(),
+  ownerName: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export type CreateVehicleInput = z.infer<typeof createVehicleSchema>;
+export type UpdateVehicleInput = z.infer<typeof updateVehicleSchema>;
+
+export type Vehicle = {
+  id: string;
+  vehicleNo: string;
+  ownerName: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+// ─── Purchase schemas ─────────────────────────────────────────────────────────
+
+export const createPurchaseItemSchema = z.object({
+  itemId: z.string().uuid('Invalid item ID'),
+  grossWeight: z.number().positive('Gross weight must be positive'),
+  cutWeight: z.number().min(0, 'Cut weight cannot be negative').default(0),
+  rate: z.number().positive('Rate must be positive'),
+});
+
+export const createPurchaseSchema = z
+  .object({
+    partyId: z.string().uuid('Invalid party ID'),
+    vehicleId: z.string().uuid('Invalid vehicle ID').optional(),
+    warehouseId: z.string().uuid('Invalid warehouse ID'),
+    purchaseDate: z.string().min(1, 'Purchase date is required'),
+    expenseAmount: z.number().min(0).default(0),
+    items: z.array(createPurchaseItemSchema).min(1, 'At least one item is required'),
+  })
+  .refine(
+    (d) => d.items.every((item) => item.cutWeight < item.grossWeight),
+    {
+      message: 'Cut weight must be less than gross weight for all items',
+      path: ['items'],
+    },
+  );
+
+export type CreatePurchaseItemInput = z.infer<typeof createPurchaseItemSchema>;
+export type CreatePurchaseInput = z.infer<typeof createPurchaseSchema>;
+
+export type PurchaseItem = {
+  id: string;
+  purchaseId: string;
+  itemId: string;
+  grossWeight: string;
+  cutWeight: string;
+  netWeight: string;
+  rate: string;
+  amount: string;
+  item?: ScrapItem;
+};
+
+export type Purchase = {
+  id: string;
+  purchaseNumber: string;
+  partyId: string;
+  vehicleId: string | null;
+  warehouseId: string;
+  purchaseDate: string;
+  status: 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
+  grossAmount: string;
+  expenseAmount: string;
+  netAmount: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  party?: Party;
+  vehicle?: Vehicle;
+  warehouse?: Warehouse;
+  items?: PurchaseItem[];
+};
+
+// ─── Sale schemas ─────────────────────────────────────────────────────────────
+
+export const createSaleItemSchema = z.object({
+  itemId: z.string().uuid('Invalid item ID'),
+  quantity: z.number().positive('Quantity must be positive'),
+  rate: z.number().positive('Rate must be positive'),
+});
+
+export const createSaleSchema = z.object({
+  partyId: z.string().uuid('Invalid party ID'),
+  warehouseId: z.string().uuid('Invalid warehouse ID'),
+  saleDate: z.string().min(1, 'Sale date is required'),
+  expenseAmount: z.number().min(0).default(0),
+  items: z.array(createSaleItemSchema).min(1, 'At least one item is required'),
+});
+
+export type CreateSaleItemInput = z.infer<typeof createSaleItemSchema>;
+export type CreateSaleInput = z.infer<typeof createSaleSchema>;
+
+export type SaleItem = {
+  id: string;
+  saleId: string;
+  itemId: string;
+  quantity: string;
+  rate: string;
+  amount: string;
+  item?: ScrapItem;
+};
+
+export type Sale = {
+  id: string;
+  saleNumber: string;
+  partyId: string;
+  warehouseId: string;
+  saleDate: string;
+  status: 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
+  grossAmount: string;
+  expenseAmount: string;
+  netAmount: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  party?: Party;
+  warehouse?: Warehouse;
+  items?: SaleItem[];
+};

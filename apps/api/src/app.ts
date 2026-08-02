@@ -9,6 +9,11 @@ import { registerErrorHandler } from './common/errorHandler.js';
 import { successResponse } from './common/response.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { partiesRoutes } from './modules/parties/parties.routes.js';
+import { itemsRoutes } from './modules/items/items.routes.js';
+import { warehousesRoutes } from './modules/warehouses/warehouses.routes.js';
+import { vehiclesRoutes } from './modules/vehicles/vehicles.routes.js';
+import { purchasesRoutes } from './modules/purchases/purchases.routes.js';
+import { salesRoutes } from './modules/sales/sales.routes.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -59,6 +64,11 @@ export async function buildApp() {
 
   await app.register(authRoutes, { prefix: '/api/v1/auth' });
   await app.register(partiesRoutes, { prefix: '/api/v1/parties' });
+  await app.register(itemsRoutes, { prefix: '/api/v1/items' });
+  await app.register(warehousesRoutes, { prefix: '/api/v1/warehouses' });
+  await app.register(vehiclesRoutes, { prefix: '/api/v1/vehicles' });
+  await app.register(purchasesRoutes, { prefix: '/api/v1/purchases' });
+  await app.register(salesRoutes, { prefix: '/api/v1/sales' });
 
   return app;
 }
