@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { Decimal } from 'decimal.js';
 import { AppError } from '../../common/errors.js';
-import { calculateCurrentStock } from '../../common/stock.js';
+import { calculateCurrentStock, calculateWeightedAvgCost } from '../../common/stock.js';
 import { calculatePartyBalance } from '../../common/ledger.js';
 import type { CreateSaleInput } from '@scrap-erp/shared-types';
 
@@ -95,6 +95,9 @@ export async function createSale(
 
     // ── Create SaleItems + StockMovements ──────────────────────────────────
     for (const item of processedItems) {
+      // Calculate weighted average cost at time of sale (locked in permanently)
+      const unitCost = await calculateWeightedAvgCost(item.itemId, data.warehouseId, tx);
+
       await tx.saleItem.create({
         data: {
           saleId: sale.id,
@@ -102,6 +105,7 @@ export async function createSale(
           quantity: item.quantity.toDecimalPlaces(3).toString(),
           rate: item.rate.toDecimalPlaces(2).toString(),
           amount: item.amount.toDecimalPlaces(2).toString(),
+          unitCost: unitCost.toDecimalPlaces(4).toString(),
         },
       });
 
@@ -275,4 +279,88 @@ export async function cancelSale(prisma: PrismaClient, id: string, userId: strin
       },
     });
   });
+}
+
+// ─── Profit Report ────────────────────────────────────────────────────────────
+
+export type ProfitReportFilters = {
+  from?: string;
+  to?: string;
+  partyId?: string;
+  warehouseId?: string;
+};
+
+export async function getProfitReport(prisma: PrismaClient, filters: ProfitReportFilters) {
+  const where: Prisma.SaleWhereInput = {
+    status: 'CONFIRMED', // exclude cancelled sales from profit reports
+    deletedAt: null,
+    ...(filters.partyId && { partyId: filters.partyId }),
+    ...(filters.warehouseId && { warehouseId: filters.warehouseId }),
+    ...((filters.from || filters.to) && {
+      saleDate: {
+        ...(filters.from && { gte: new Date(filters.from) }),
+        ...(filters.to && { lte: new Date(filters.to) }),
+      },
+    }),
+  };
+
+  const sales = await prisma.sale.findMany({
+    where,
+    orderBy: { saleDate: 'desc' },
+    include: {
+      party: { select: { name: true, partyCode: true } },
+      warehouse: { select: { name: true } },
+      items: true,
+    },
+  });
+
+  const rows = sales.map((sale) => {
+    const grossAmount = new Decimal(sale.grossAmount.toString());
+    const expenseAmount = new Decimal(sale.expenseAmount.toString());
+
+    // COGS = sum of (quantity × unitCost) for each SaleItem
+    // unitCost may be null for pre-9c records — treat as 0
+    const cogs = sale.items.reduce((sum: Decimal, item) => {
+      const qty = new Decimal(item.quantity.toString());
+      const cost = item.unitCost ? new Decimal(item.unitCost.toString()) : new Decimal(0);
+      return sum.plus(qty.times(cost));
+    }, new Decimal(0));
+
+    const netProfit = grossAmount.minus(expenseAmount).minus(cogs);
+    const margin =
+      grossAmount.isZero() ? new Decimal(0) : netProfit.dividedBy(grossAmount).times(100);
+
+    return {
+      id: sale.id,
+      saleNumber: sale.saleNumber,
+      saleDate: sale.saleDate,
+      partyName: (sale as { party?: { name: string } | null }).party?.name ?? null,
+      warehouseName: (sale as { warehouse?: { name: string } | null }).warehouse?.name ?? null,      grossAmount: grossAmount.toDecimalPlaces(2).toString(),
+      expenseAmount: expenseAmount.toDecimalPlaces(2).toString(),
+      cogs: cogs.toDecimalPlaces(2).toString(),
+      netProfit: netProfit.toDecimalPlaces(2).toString(),
+      marginPct: margin.toDecimalPlaces(2).toString(),
+    };
+  });
+
+  // Aggregate summary
+  const totalRevenue = rows.reduce((s, r) => s.plus(r.grossAmount), new Decimal(0));
+  const totalExpense = rows.reduce((s, r) => s.plus(r.expenseAmount), new Decimal(0));
+  const totalCogs = rows.reduce((s, r) => s.plus(r.cogs), new Decimal(0));
+  const totalProfit = rows.reduce((s, r) => s.plus(r.netProfit), new Decimal(0));
+  const overallMargin = totalRevenue.isZero()
+    ? new Decimal(0)
+    : totalProfit.dividedBy(totalRevenue).times(100);
+
+  return {
+    rows,
+    summary: {
+      totalSales: rows.length,
+      totalRevenue: totalRevenue.toDecimalPlaces(2).toString(),
+      totalExpense: totalExpense.toDecimalPlaces(2).toString(),
+      totalCogs: totalCogs.toDecimalPlaces(2).toString(),
+      totalProfit: totalProfit.toDecimalPlaces(2).toString(),
+      profitMarginPct: overallMargin.toDecimalPlaces(2).toString(),
+    },
+  };
 }

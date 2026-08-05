@@ -10,6 +10,8 @@ import {
   createParty,
   updateParty,
   deactivateParty,
+  getPartyBalance,
+  getPartyLedger,
 } from './parties.service.js';
 
 const listQuerySchema = z.object({
@@ -39,6 +41,25 @@ export async function partiesRoutes(app: FastifyInstance) {
     const query = validate(listQuerySchema, request.query);
     const result = await listParties(app.prisma, query);
     return successResponse(result);
+  });
+
+  // GET /api/v1/parties/:id/balance
+  app.get<{ Params: { id: string } }>('/:id/balance', async (request, _reply) => {
+    return successResponse(await getPartyBalance(app.prisma, request.params.id));
+  });
+
+  // GET /api/v1/parties/:id/ledger
+  app.get<{ Params: { id: string } }>('/:id/ledger', async (request, _reply) => {
+    const query = validate(
+      z.object({
+        from: z.string().optional(),
+        to: z.string().optional(),
+        page: z.coerce.number().int().min(1).default(1),
+        limit: z.coerce.number().int().min(1).max(100).default(50),
+      }),
+      request.query,
+    );
+    return successResponse(await getPartyLedger(app.prisma, request.params.id, query));
   });
 
   // GET /api/v1/parties/:id

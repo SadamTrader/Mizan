@@ -4,7 +4,7 @@ import { authenticate, requireRole } from '../../common/middleware/authenticate.
 import { validate } from '../../common/validate.js';
 import { successResponse } from '../../common/response.js';
 import { createSaleSchema } from '@scrap-erp/shared-types';
-import { createSale, listSales, getSaleById, cancelSale } from './sales.service.js';
+import { createSale, listSales, getSaleById, cancelSale, getProfitReport } from './sales.service.js';
 
 const listQuerySchema = z.object({
   search: z.string().optional(),
@@ -19,6 +19,22 @@ const listQuerySchema = z.object({
 
 export async function salesRoutes(app: FastifyInstance) {
   app.addHook('preHandler', authenticate);
+
+  // GET /api/v1/sales/reports/profit — must be registered BEFORE /:id to avoid route conflict
+  app.get(
+    '/reports/profit',
+    { preHandler: [requireRole(['ADMIN'])] },
+    async (request, _reply) => {
+      const schema = z.object({
+        from: z.string().optional(),
+        to: z.string().optional(),
+        partyId: z.string().uuid().optional(),
+        warehouseId: z.string().uuid().optional(),
+      });
+      const query = validate(schema, request.query);
+      return successResponse(await getProfitReport(app.prisma, query));
+    },
+  );
 
   // GET /api/v1/sales
   app.get('/', async (request, _reply) => {

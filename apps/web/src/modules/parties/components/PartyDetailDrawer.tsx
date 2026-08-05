@@ -69,11 +69,15 @@ export function PartyDetailDrawer({ party, onClose, onEdit }: Props) {
               )}
               <div className="flex justify-between">
                 <dt className="text-gray-500">Balance</dt>
-                {/* NOTE: This shows openingBalance only for now.
-                    Starting Part 10, this will be replaced with a live
-                    ledger balance calculated from LedgerEntry records. */}
-                <dd className="font-medium text-gray-900">
-                  {Number(party.openingBalance).toLocaleString('en-US', {
+                {/* Live balance from Part 10a — currentBalance is calculated from LedgerEntries */}
+                <dd className={`font-medium ${
+                  Number(party.currentBalance ?? party.openingBalance) > 0
+                    ? 'text-orange-600'
+                    : Number(party.currentBalance ?? party.openingBalance) < 0
+                    ? 'text-blue-600'
+                    : 'text-gray-900'
+                }`}>
+                  {Number(party.currentBalance ?? party.openingBalance).toLocaleString('en-US', {
                     minimumFractionDigits: 2,
                   })}
                 </dd>
@@ -86,19 +90,19 @@ export function PartyDetailDrawer({ party, onClose, onEdit }: Props) {
             <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
               Recent Purchases
             </h3>
-            <p className="text-xs text-gray-400 italic">Available after Part 8</p>
+            <p className="text-xs text-gray-400 italic">Available in Purchase module</p>
           </section>
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
               Recent Sales
             </h3>
-            <p className="text-xs text-gray-400 italic">Available after Part 9</p>
+            <p className="text-xs text-gray-400 italic">Available in Sales module</p>
           </section>
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
               Recent Payments
             </h3>
-            <p className="text-xs text-gray-400 italic">Available after Part 10</p>
+            <p className="text-xs text-gray-400 italic">Available in Payments module</p>
           </section>
         </div>
 
@@ -111,6 +115,12 @@ export function PartyDetailDrawer({ party, onClose, onEdit }: Props) {
             >
               Edit
             </button>
+            <a
+              href={`/parties/${party.id}/ledger`}
+              className="text-sm px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors"
+            >
+              Ledger
+            </a>
             {role === 'ADMIN' && (
               <button
                 onClick={handleDeactivate}

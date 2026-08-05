@@ -16,6 +16,11 @@ import { PurchaseDetailPage } from '@/modules/purchases/pages/PurchaseDetailPage
 import { SalesListPage } from '@/modules/sales/pages/SalesListPage';
 import { SaleFormPage } from '@/modules/sales/pages/SaleFormPage';
 import { SaleDetailPage } from '@/modules/sales/pages/SaleDetailPage';
+import { ProfitReportPage } from '@/modules/reports/pages/ProfitReportPage';
+import { PaymentsListPage } from '@/modules/payments/pages/PaymentsListPage';
+import { PaymentFormPage } from '@/modules/payments/pages/PaymentFormPage';
+import { PaymentDetailPage } from '@/modules/payments/pages/PaymentDetailPage';
+import { PartyLedgerPage } from '@/modules/parties/pages/PartyLedgerPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,6 +76,11 @@ function AppRoutes() {
       <Route path="/sales" element={<ProtectedRoute><DashboardLayout><SalesListPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/sales/new" element={<ProtectedRoute><DashboardLayout><SaleFormPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/sales/:id" element={<ProtectedRoute><DashboardLayout><SaleDetailPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/reports/profit" element={<ProtectedRoute><DashboardLayout><ProfitReportPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/payments" element={<ProtectedRoute><DashboardLayout><PaymentsListPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/payments/new" element={<ProtectedRoute><DashboardLayout><PaymentFormPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/payments/:id" element={<ProtectedRoute><DashboardLayout><PaymentDetailPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/parties/:id/ledger" element={<ProtectedRoute><DashboardLayout><PartyLedgerPage /></DashboardLayout></ProtectedRoute>} />
 
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

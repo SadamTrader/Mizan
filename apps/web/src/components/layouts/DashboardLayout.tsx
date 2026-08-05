@@ -35,6 +35,7 @@ export function DashboardLayout({ children }: Props) {
           <NavLink to="/parties" className={navCls}>Parties</NavLink>
           <NavLink to="/purchases" className={navCls}>Purchases</NavLink>
           <NavLink to="/sales" className={navCls}>Sales</NavLink>
+          <NavLink to="/payments" className={navCls}>Payments</NavLink>
 
           {/* Master Data group */}
           <div className="pt-3 pb-1">
@@ -44,6 +45,16 @@ export function DashboardLayout({ children }: Props) {
           <NavLink to="/warehouses" className={navCls}>Warehouses</NavLink>
           <NavLink to="/vehicles" className={navCls}>Vehicles</NavLink>
           {/* More nav links added as modules are built */}
+
+          {/* Reports — Admin only */}
+          {user?.role === 'ADMIN' && (
+            <>
+              <div className="pt-3 pb-1">
+                <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Reports</p>
+              </div>
+              <NavLink to="/reports/profit" className={navCls}>Profit Report</NavLink>
+            </>
+          )}
         </nav>
 
         <div className="px-3 py-4 border-t shrink-0">

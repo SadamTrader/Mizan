@@ -67,13 +67,14 @@ export type Party = {
   name: string;
   phone: string | null;
   address: string | null;
-  openingBalance: string; // Prisma Decimal serializes as string
+  openingBalance: string;
   isSupplier: boolean;
   isCustomer: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  currentBalance?: string; // live calculated — present on getPartyById, not on list
 };
 
 // ─── ScrapItem schemas ────────────────────────────────────────────────────────
@@ -245,6 +246,7 @@ export type SaleItem = {
   quantity: string;
   rate: string;
   amount: string;
+  unitCost: string | null; // weighted avg cost at time of sale; null for pre-9c records
   item?: ScrapItem;
 };
 
@@ -265,4 +267,84 @@ export type Sale = {
   party?: Party;
   warehouse?: Warehouse;
   items?: SaleItem[];
+};
+
+// ─── Profit Report types ──────────────────────────────────────────────────────
+
+export type ProfitReportRow = {
+  id: string;
+  saleNumber: string;
+  saleDate: string;
+  partyName: string | null;
+  warehouseName: string | null;
+  grossAmount: string;
+  expenseAmount: string;
+  cogs: string;
+  netProfit: string;
+  marginPct: string;
+};
+
+export type ProfitReportSummary = {
+  totalSales: number;
+  totalRevenue: string;
+  totalExpense: string;
+  totalCogs: string;
+  totalProfit: string;
+  profitMarginPct: string;
+};
+
+export type ProfitReport = {
+  rows: ProfitReportRow[];
+  summary: ProfitReportSummary;
+};
+
+// ─── Payment schemas ──────────────────────────────────────────────────────────
+
+export const createPaymentSchema = z.object({
+  partyId: z.string().uuid('Invalid party ID'),
+  paymentType: z.enum(['SUPPLIER_PAYMENT', 'CUSTOMER_PAYMENT']),
+  amount: z.number().positive('Amount must be positive'),
+  method: z.enum(['CASH', 'BANK_TRANSFER', 'CHEQUE', 'OTHER']),
+  referenceNumber: z.string().optional(),
+  paymentDate: z.string().min(1, 'Payment date is required'),
+  remarks: z.string().optional(),
+});
+
+export type CreatePaymentInput = z.infer<typeof createPaymentSchema>;
+
+export type Payment = {
+  id: string;
+  paymentNumber: string;
+  partyId: string;
+  paymentType: 'SUPPLIER_PAYMENT' | 'CUSTOMER_PAYMENT';
+  amount: string;
+  method: 'CASH' | 'BANK_TRANSFER' | 'CHEQUE' | 'OTHER';
+  referenceNumber: string | null;
+  paymentDate: string;
+  remarks: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  party?: Party;
+};
+
+export type LedgerEntry = {
+  id: string;
+  partyId: string;
+  transactionType: 'PURCHASE' | 'SALE' | 'PAYMENT' | 'EXPENSE_ADJUSTMENT';
+  referenceType: string;
+  referenceId: string;
+  debit: string;
+  credit: string;
+  balanceAfter: string;
+  entryDate: string;
+  createdAt: string;
+};
+
+export type PartyLedger = {
+  openingBalance: string;
+  entries: LedgerEntry[];
+  total: number;
+  page: number;
+  pageSize: number;
 };

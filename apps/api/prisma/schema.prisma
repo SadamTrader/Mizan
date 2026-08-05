@@ -265,12 +265,13 @@ model Sale {
 }
 
 model SaleItem {
-  id       String   @id @default(uuid())
-  saleId   String   @map("sale_id")
-  itemId   String   @map("item_id")
-  quantity Decimal  @db.Decimal(15, 3)
-  rate     Decimal  @db.Decimal(15, 2)
-  amount   Decimal  @db.Decimal(15, 2)
+  id        String   @id @default(uuid())
+  saleId    String   @map("sale_id")
+  itemId    String   @map("item_id")
+  quantity  Decimal  @db.Decimal(15, 3)
+  rate      Decimal  @db.Decimal(15, 2)
+  amount    Decimal  @db.Decimal(15, 2)
+  unitCost  Decimal? @map("unit_cost") @db.Decimal(15, 4) // weighted avg cost at time of sale; null for pre-9c records
 
   sale Sale      @relation(fields: [saleId], references: [id])
   item ScrapItem @relation(fields: [itemId], references: [id])
@@ -328,6 +329,7 @@ model StockMovement {
   referenceId   String       @map("reference_id")
   quantity      Decimal      @db.Decimal(15, 3)
   balanceAfter  Decimal      @map("balance_after") @db.Decimal(15, 3)
+  notes         String?      // free-text notes e.g. manual adjustment reason
   createdBy     String       @map("created_by")
   createdAt     DateTime     @default(now()) @map("created_at")
 

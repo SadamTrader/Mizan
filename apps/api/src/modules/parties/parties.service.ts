@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { AppError } from '../../common/errors.js';
+import { calculatePartyBalance } from '../../common/ledger.js';
 import type { CreatePartyInput, UpdatePartyInput } from '@scrap-erp/shared-types';
 
 // ─── Code generation ──────────────────────────────────────────────────────────
@@ -58,14 +59,17 @@ export async function listParties(prisma: PrismaClient, filters: ListPartiesFilt
   return { items, total, page, pageSize: limit };
 }
 
-// ─── Get by ID ────────────────────────────────────────────────────────────────
+// ─── Get by ID (with live balance) ───────────────────────────────────────────
 
 export async function getPartyById(prisma: PrismaClient, id: string) {
   const party = await prisma.party.findFirst({
     where: { id, deletedAt: null },
   });
   if (!party) throw new AppError(404, 'Party not found');
-  return party;
+
+  // Attach live calculated balance — closes the Part 8b gap
+  const balance = await calculatePartyBalance(id, prisma as never);
+  return { ...party, currentBalance: balance.toDecimalPlaces(2).toString() };
 }
 
 // ─── Create ───────────────────────────────────────────────────────────────────
@@ -111,4 +115,84 @@ export async function deactivateParty(prisma: PrismaClient, id: string) {
     where: { id },
     data: { isActive: false, deletedAt: new Date() },
   });
+}
+
+// ─── Live balance ─────────────────────────────────────────────────────────────
+
+export async function getPartyBalance(prisma: PrismaClient, id: string) {
+  await getPartyById(prisma, id); // throws 404 if not found
+  const balance = await calculatePartyBalance(id, prisma as never);
+  return { partyId: id, balance: balance.toDecimalPlaces(2).toString() };
+}
+
+// ─── Ledger statement ─────────────────────────────────────────────────────────
+
+export type LedgerFilters = {
+  from?: string;
+  to?: string;
+  page?: number;
+  limit?: number;
+};
+
+export async function getPartyLedger(
+  prisma: PrismaClient,
+  partyId: string,
+  filters: LedgerFilters,
+) {
+  await getPartyById(prisma, partyId); // throws 404 if not found
+
+  const page = Math.max(1, filters.page ?? 1);
+  const limit = Math.min(100, Math.max(1, filters.limit ?? 50));
+  const skip = (page - 1) * limit;
+
+  const dateFilter = {
+    ...((filters.from || filters.to) && {
+      entryDate: {
+        ...(filters.from && { gte: new Date(filters.from) }),
+        ...(filters.to && { lte: new Date(filters.to) }),
+      },
+    }),
+  };
+
+  // If date filter applied, calculate opening balance as of just before start date
+  let openingBalance = '0';
+  if (filters.from) {
+    const beforeEntries = await prisma.ledgerEntry.aggregate({
+      where: {
+        partyId,
+        entryDate: { lt: new Date(filters.from) },
+      },
+      _sum: { credit: true, debit: true },
+    });
+
+    const party = await prisma.party.findUnique({
+      where: { id: partyId },
+      select: { openingBalance: true },
+    });
+
+    const { Decimal } = await import('decimal.js');
+    const ob = new Decimal(party?.openingBalance?.toString() ?? '0');
+    const cr = new Decimal(beforeEntries._sum.credit?.toString() ?? '0');
+    const db = new Decimal(beforeEntries._sum.debit?.toString() ?? '0');
+    openingBalance = ob.plus(cr).minus(db).toDecimalPlaces(2).toString();
+  } else {
+    // No date filter — opening balance is just the party's openingBalance field
+    const party = await prisma.party.findUnique({
+      where: { id: partyId },
+      select: { openingBalance: true },
+    });
+    openingBalance = party?.openingBalance?.toString() ?? '0';
+  }
+
+  const [entries, total] = await Promise.all([
+    prisma.ledgerEntry.findMany({
+      where: { partyId, ...dateFilter },
+      orderBy: [{ entryDate: 'asc' }, { createdAt: 'asc' }],
+      skip,
+      take: limit,
+    }),
+    prisma.ledgerEntry.count({ where: { partyId, ...dateFilter } }),
+  ]);
+
+  return { openingBalance, entries, total, page, pageSize: limit };
 }
