@@ -303,20 +303,41 @@ model Payment {
   @@map("payments")
 }
 
-model Expense {
-  id            String      @id @default(uuid())
-  expenseTypeId String      @map("expense_type_id")
-  amount        Decimal     @db.Decimal(15, 2)
-  remarks       String?
-  expenseDate   DateTime    @map("expense_date")
-  createdBy     String      @map("created_by")
-  createdAt     DateTime    @default(now()) @map("created_at")
-  updatedAt     DateTime    @updatedAt @map("updated_at")
+enum ExpenseCategory {
+  RENT
+  SALARY
+  FUEL
+  UTILITIES
+  MAINTENANCE
+  OTHER
+}
 
-  expenseType ExpenseType @relation(fields: [expenseTypeId], references: [id])
-  creator     User        @relation("ExpenseCreatedBy", fields: [createdBy], references: [id])
+enum ExpensePaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+  OTHER
+}
+
+model Expense {
+  id             String               @id @default(uuid())
+  expenseNumber  String               @unique @map("expense_number")
+  expenseTypeId  String?              @map("expense_type_id") // kept nullable for backward compat
+  category       ExpenseCategory      @default(OTHER)
+  amount         Decimal              @db.Decimal(15, 2)
+  description    String               @default("")
+  remarks        String?
+  expenseDate    DateTime             @map("expense_date")
+  paymentMethod  ExpensePaymentMethod @default(CASH) @map("payment_method")
+  createdBy      String               @map("created_by")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+
+  expenseType ExpenseType? @relation(fields: [expenseTypeId], references: [id])
+  creator     User         @relation("ExpenseCreatedBy", fields: [createdBy], references: [id])
 
   @@index([expenseDate])
+  @@index([category])
   @@map("expenses")
 }
 

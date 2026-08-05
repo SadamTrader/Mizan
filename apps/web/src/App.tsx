@@ -21,6 +21,10 @@ import { PaymentsListPage } from '@/modules/payments/pages/PaymentsListPage';
 import { PaymentFormPage } from '@/modules/payments/pages/PaymentFormPage';
 import { PaymentDetailPage } from '@/modules/payments/pages/PaymentDetailPage';
 import { PartyLedgerPage } from '@/modules/parties/pages/PartyLedgerPage';
+import { StockOverviewPage } from '@/modules/inventory/pages/StockOverviewPage';
+import { MovementHistoryPage } from '@/modules/inventory/pages/MovementHistoryPage';
+import { ManualAdjustmentPage } from '@/modules/inventory/pages/ManualAdjustmentPage';
+import { AdminRoute } from '@/components/AdminRoute';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -81,6 +85,9 @@ function AppRoutes() {
       <Route path="/payments/new" element={<ProtectedRoute><DashboardLayout><PaymentFormPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/payments/:id" element={<ProtectedRoute><DashboardLayout><PaymentDetailPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/parties/:id/ledger" element={<ProtectedRoute><DashboardLayout><PartyLedgerPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/inventory" element={<ProtectedRoute><DashboardLayout><StockOverviewPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/inventory/movements" element={<ProtectedRoute><DashboardLayout><MovementHistoryPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/inventory/adjustments" element={<ProtectedRoute><AdminRoute><DashboardLayout><ManualAdjustmentPage /></DashboardLayout></AdminRoute></ProtectedRoute>} />
 
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

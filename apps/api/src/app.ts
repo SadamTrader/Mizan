@@ -16,6 +16,7 @@ import { purchasesRoutes } from './modules/purchases/purchases.routes.js';
 import { salesRoutes } from './modules/sales/sales.routes.js';
 import { paymentsRoutes } from './modules/payments/payments.routes.js';
 import { inventoryRoutes } from './modules/inventory/inventory.routes.js';
+import { expensesRoutes } from './modules/expenses/expenses.routes.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -73,6 +74,7 @@ export async function buildApp() {
   await app.register(salesRoutes, { prefix: '/api/v1/sales' });
   await app.register(paymentsRoutes, { prefix: '/api/v1/payments' });
   await app.register(inventoryRoutes, { prefix: '/api/v1/inventory' });
+  await app.register(expensesRoutes, { prefix: '/api/v1/expenses' });
 
   return app;
 }

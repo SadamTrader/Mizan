@@ -348,3 +348,31 @@ export type PartyLedger = {
   page: number;
   pageSize: number;
 };
+
+// ─── Expense schemas ──────────────────────────────────────────────────────────
+
+export const createExpenseSchema = z.object({
+  category: z.enum(['RENT', 'SALARY', 'FUEL', 'UTILITIES', 'MAINTENANCE', 'OTHER']),
+  amount: z.number().positive('Amount must be positive'),
+  description: z.string().min(1, 'Description is required'),
+  expenseDate: z.string().min(1, 'Expense date is required'),
+  paymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'CHEQUE', 'OTHER']),
+});
+
+export const updateExpenseSchema = createExpenseSchema.partial();
+
+export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;
+export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>;
+
+export type Expense = {
+  id: string;
+  expenseNumber: string;
+  category: 'RENT' | 'SALARY' | 'FUEL' | 'UTILITIES' | 'MAINTENANCE' | 'OTHER';
+  amount: string;
+  description: string;
+  expenseDate: string;
+  paymentMethod: 'CASH' | 'BANK_TRANSFER' | 'CHEQUE' | 'OTHER';
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
