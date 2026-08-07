@@ -37,6 +37,7 @@ export function DashboardLayout({ children }: Props) {
           <NavLink to="/sales" className={navCls}>Sales</NavLink>
           <NavLink to="/payments" className={navCls}>Payments</NavLink>
           <NavLink to="/inventory" className={navCls}>Inventory</NavLink>
+          <NavLink to="/expenses" className={navCls}>Expenses</NavLink>
 
           {/* Master Data group */}
           <div className="pt-3 pb-1">

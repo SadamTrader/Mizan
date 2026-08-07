@@ -5,8 +5,7 @@ import { useSilentRefresh } from '@/modules/auth/hooks/useSilentRefresh';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { LoginPage } from '@/modules/auth/pages/LoginPage';
-import { DashboardPage } from '@/modules/dashboard/pages/DashboardPage';
-import { PartiesListPage } from '@/modules/parties/pages/PartiesListPage';
+import { DashboardPage } from '@/modules/dashboard/pages/DashboardPage';import { PartiesListPage } from '@/modules/parties/pages/PartiesListPage';
 import { ItemsListPage } from '@/modules/items/pages/ItemsListPage';
 import { WarehousesListPage } from '@/modules/warehouses/pages/WarehousesListPage';
 import { VehiclesListPage } from '@/modules/vehicles/pages/VehiclesListPage';
@@ -25,6 +24,8 @@ import { StockOverviewPage } from '@/modules/inventory/pages/StockOverviewPage';
 import { MovementHistoryPage } from '@/modules/inventory/pages/MovementHistoryPage';
 import { ManualAdjustmentPage } from '@/modules/inventory/pages/ManualAdjustmentPage';
 import { AdminRoute } from '@/components/AdminRoute';
+import { ExpensesListPage } from '@/modules/expenses/pages/ExpensesListPage';
+import { ExpenseFormPage } from '@/modules/expenses/pages/ExpenseFormPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -88,6 +89,9 @@ function AppRoutes() {
       <Route path="/inventory" element={<ProtectedRoute><DashboardLayout><StockOverviewPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/inventory/movements" element={<ProtectedRoute><DashboardLayout><MovementHistoryPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/inventory/adjustments" element={<ProtectedRoute><AdminRoute><DashboardLayout><ManualAdjustmentPage /></DashboardLayout></AdminRoute></ProtectedRoute>} />
+      <Route path="/expenses" element={<ProtectedRoute><DashboardLayout><ExpensesListPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/expenses/new" element={<ProtectedRoute><AdminRoute><DashboardLayout><ExpenseFormPage /></DashboardLayout></AdminRoute></ProtectedRoute>} />
+      <Route path="/expenses/:id/edit" element={<ProtectedRoute><AdminRoute><DashboardLayout><ExpenseFormPage /></DashboardLayout></AdminRoute></ProtectedRoute>} />
 
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
